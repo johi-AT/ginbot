@@ -1,75 +1,80 @@
 #include <main.h>
 #include <Arduino.h>
 
-const int buttonPin = 16;
+const byte pin_button = 16;
 
-const fluid DEFAULT_FLUID_GIN = {25, 2000};
-const fluid DEFAULT_FLUID_UNDONE = {13, 3000};
-const fluid DEFAULT_FLUID_TONIC = {12, 5000};
-
+// { pin, dispense duration, _ )
+fluid fluids[] = {
+  {11, 2000, 0},
+  {12, 3000, 0},
+  {13, 5000, 0},
+};
 const int INTERVAL = 100; // process every x ms
-
-fluid fluid_gin, fluid_undone, fluid_tonic;
 
 // variables
 stateEnum state;
-unsigned long startTime, currentTime;
-int elapsedTime;
-
+unsigned long time_start, time_current;
+int time_elapsed;
 unsigned long last_step;
+bool all_zero;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(pin_button, INPUT_PULLUP);
 
-  pinMode(fluid_gin.pin, OUTPUT);
-  pinMode(fluid_undone.pin, OUTPUT);
-  pinMode(fluid_tonic.pin, OUTPUT);
+  for(fluid fl : fluids) {
+    pinMode(fl.pin, OUTPUT);
+  }
 
-  pinMode(buttonPin, INPUT_PULLUP);
   state = READY;
 }
 
 void loop() {
   switch (state) {
   case READY:
-    if (digitalRead(buttonPin) == HIGH) return;
+    if (digitalRead(pin_button) == HIGH) return;
 
     // Button was pressed and we are ready
+   
+    for(fluid &fl : fluids) {
+      fl.time_left_ms = fl.time_pour;
+    }
+    
+    //Serial.print("WTF: ");
+    //Serial.print(fluids[0].time_left_ms);
 
-    fluid_gin = DEFAULT_FLUID_GIN;
-    fluid_undone = DEFAULT_FLUID_UNDONE;
-    fluid_tonic = DEFAULT_FLUID_TONIC;
-
-    startTime = millis();
+    time_start = millis();
     state = SERVING;
     break;
   case SERVING:
-    currentTime = millis();
-    elapsedTime = currentTime - startTime;
-    startTime = currentTime;
+    time_current = millis();
+    time_elapsed = time_current - time_start;
+    time_start = time_current;
 
-    fluid_gin.time_left_ms = max(0, fluid_gin.time_left_ms - elapsedTime);
-    fluid_undone.time_left_ms = max(0, fluid_undone.time_left_ms - elapsedTime);
-    fluid_tonic.time_left_ms = max(0, fluid_tonic.time_left_ms - elapsedTime);
+    all_zero = true;
+    for(fluid &fl : fluids) {
+      fl.time_left_ms = max(0, fl.time_left_ms - time_elapsed);
 
-    if ( currentTime - last_step >= INTERVAL ) {
-      Serial.print("time_left_ms: GIN: ");
-      Serial.print(fluid_gin.time_left_ms);
-      Serial.print(" UNDONE: ");
-      Serial.print(fluid_undone.time_left_ms);
-      Serial.print(" TONIC: ");
-      Serial.println(fluid_tonic.time_left_ms);
+      if (fl.time_left_ms > 0) {
+        digitalWrite(fl.pin, HIGH);
+        all_zero = false;
+      } else {
+        digitalWrite(fl.pin, LOW);
+      }
+
+    }
+
+    if ( time_current - last_step >= INTERVAL ) {
+      Serial.print("time_left_ms: ");
+      for(fluid fl : fluids) {
+        Serial.print(fl.time_left_ms);
+        Serial.print(" - ");
+      }
+      Serial.println();
       last_step = millis();
     }
     
-    digitalWrite(fluid_gin.pin, fluid_gin.time_left_ms > 0 ? HIGH : LOW);
-    digitalWrite(fluid_undone.pin, fluid_undone.time_left_ms > 0 ? HIGH : LOW);
-    digitalWrite(fluid_tonic.pin, fluid_tonic.time_left_ms > 0 ? HIGH : LOW);
-
-    if ( (fluid_gin.time_left_ms == 0) &&
-         (fluid_undone.time_left_ms == 0) &&
-         (fluid_tonic.time_left_ms == 0) ) {
+    if (all_zero == true) {
       state = READY;
       Serial.println("READY");
     }
