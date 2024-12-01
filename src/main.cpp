@@ -1,26 +1,33 @@
 #include <main.h>
 #include <Arduino.h>
 
-const byte pin_button = 16;
+const byte PIN_BUTTON = 16;
+const byte PIN_SWITCH = 18;
 
-// { pin, dispense duration, _ )
+const byte RECIPE_GIN_TONIC = 0x3;    // 010 + 001
+const byte RECIPE_UNDONE_TONIC = 0x5; // 100 + 001
+
+// { pin, dispense duration, recipe bitmask, time_left_ms )
 fluid fluids[] = {
-  {11, 2000, 0},
-  {12, 3000, 0},
-  {13, 5000, 0},
+  {11, 2000, 0x2, 0}, // Gin
+  {12, 3000, 0x4, 0}, // Undone
+  {13, 5000, 0x1, 0}, // Tonic
 };
+
 const int INTERVAL = 100; // process every x ms
 
 // variables
-stateEnum state;
+enum_state state;
 unsigned long time_start, time_current;
 int time_elapsed;
 unsigned long last_step;
 bool all_zero;
+byte recipe_mask;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(pin_button, INPUT_PULLUP);
+  pinMode(PIN_BUTTON, INPUT_PULLUP);
+  pinMode(PIN_SWITCH, INPUT_PULLUP);
 
   for(fluid fl : fluids) {
     pinMode(fl.pin, OUTPUT);
@@ -32,17 +39,20 @@ void setup() {
 void loop() {
   switch (state) {
   case READY:
-    if (digitalRead(pin_button) == HIGH) return;
+    if (digitalRead(PIN_BUTTON) == HIGH) return;
 
     // Button was pressed and we are ready
-   
-    for(fluid &fl : fluids) {
-      fl.time_left_ms = fl.time_pour;
+
+    // Read switch and set recipe
+    recipe_mask = digitalRead(PIN_SWITCH) == HIGH ? RECIPE_GIN_TONIC : RECIPE_UNDONE_TONIC;
+
+    for (fluid &fl : fluids) {
+      // only add pour time if ingredient is in recipe
+      if ( (recipe_mask & fl.fluid_bit) > 0) {
+        fl.time_left_ms = fl.time_pour;
+      }
     }
     
-    //Serial.print("WTF: ");
-    //Serial.print(fluids[0].time_left_ms);
-
     time_start = millis();
     state = SERVING;
     break;
@@ -52,7 +62,7 @@ void loop() {
     time_start = time_current;
 
     all_zero = true;
-    for(fluid &fl : fluids) {
+    for (fluid &fl : fluids) {
       fl.time_left_ms = max(0, fl.time_left_ms - time_elapsed);
 
       if (fl.time_left_ms > 0) {
