@@ -8,3 +8,5 @@ typedef struct {
   const byte fluid_bit;
   int time_left_ms;
 } fluid;
+
+void handle_pressure();
