@@ -6,7 +6,7 @@ const byte PIN_SWITCH = 27;
 const byte PIN_COMPRESSOR = 2;
 const byte PIN_ADC_PRESSURE = 26; // GPIO26 is ADC0
 
-const int P_LOW = 400;  // get value by measuring
+const int P_LOW = 300;  // get value by measuring
 const int P_HIGH = 700; // get value by measuring
 
 const byte RECIPE_GIN_TONIC = 0x3;    // 010 + 001
