@@ -1,22 +1,22 @@
 #include <main.h>
 #include <Arduino.h>
 
-const byte PIN_BUTTON = 16;
-const byte PIN_SWITCH = 18;
+const byte PIN_BUTTON = 22;
+const byte PIN_SWITCH = 27;
 const byte PIN_COMPRESSOR = 2;
 const byte PIN_ADC_PRESSURE = 26; // GPIO26 is ADC0
 
-const int P_LOW = 600;  // get value by measuring
-const int P_HIGH = 900; // get value by measuring
+const int P_LOW = 400;  // get value by measuring
+const int P_HIGH = 700; // get value by measuring
 
 const byte RECIPE_GIN_TONIC = 0x3;    // 010 + 001
 const byte RECIPE_UNDONE_TONIC = 0x5; // 100 + 001
 
 // { pin, dispense duration, recipe bitmask, time_left_ms )
 fluid fluids[] = {
-  {11, 2000, 0x2, 0}, // Gin
-  {12, 3000, 0x4, 0}, // Undone
-  {13, 5000, 0x1, 0}, // Tonic
+  {19, 2000, 0x2, 0}, // Gin
+  {20, 3000, 0x4, 0}, // Undone
+  {21, 5000, 0x1, 0}, // Tonic
 };
 
 const int INTERVAL = 100; // process every x ms
@@ -30,8 +30,8 @@ byte recipe_mask;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(PIN_BUTTON, INPUT_PULLUP);
-  pinMode(PIN_SWITCH, INPUT_PULLUP);
+  pinMode(PIN_BUTTON, INPUT);
+  pinMode(PIN_SWITCH, INPUT);
   pinMode(PIN_COMPRESSOR, OUTPUT);
 
   for(fluid fl : fluids) {
@@ -48,12 +48,12 @@ void loop() {
 
   switch (state) {
   case READY:
-    if (digitalRead(PIN_BUTTON) == HIGH) return;
+    if (digitalRead(PIN_BUTTON) == LOW) return;
 
     // Button was pressed and we are ready
 
     // Read switch and set recipe
-    recipe_mask = digitalRead(PIN_SWITCH) == HIGH ? RECIPE_GIN_TONIC : RECIPE_UNDONE_TONIC;
+    recipe_mask = digitalRead(PIN_SWITCH) == HIGH ? RECIPE_UNDONE_TONIC: RECIPE_GIN_TONIC;
 
     for (fluid &fl : fluids) {
       // only add pour time if ingredient is in recipe
