@@ -14,9 +14,9 @@ const byte RECIPE_UNDONE_TONIC = 0x5; // 100 + 001
 
 // { pin, override_pin, dispense duration, recipe bitmask, time_left_ms )
 fluid fluids[] = {
-  {21, 13, 2000, 0x2, 0}, // Gin
-  {20, 14, 1000, 0x4, 0}, // Undone
-  {19, 15, 3000, 0x1, 0}, // Tonic
+  {21, 13, 11000, 0x2, 0}, // 1: Gin
+  {20, 14, 11000, 0x4, 0}, // 2: Undone
+  {19, 15, 19000, 0x1, 0}, // 3: Tonic
 };
 
 const int INTERVAL = 100; // process every x ms
@@ -55,7 +55,7 @@ void loop() {
     // Button was pressed and we are ready
 
     // Read switch and set recipe
-    recipe_mask = digitalRead(PIN_SWITCH) == HIGH ? RECIPE_UNDONE_TONIC: RECIPE_GIN_TONIC;
+    recipe_mask = digitalRead(PIN_SWITCH) == LOW ? RECIPE_UNDONE_TONIC: RECIPE_GIN_TONIC;
 
     for (fluid &fl : fluids) {
       // only add pour time if ingredient is in recipe
