@@ -12,11 +12,11 @@ const int P_HIGH = 700; // get value by measuring
 const byte RECIPE_GIN_TONIC = 0x3;    // 010 + 001
 const byte RECIPE_UNDONE_TONIC = 0x5; // 100 + 001
 
-// { pin, dispense duration, recipe bitmask, time_left_ms )
+// { pin, override_pin, dispense duration, recipe bitmask, time_left_ms )
 fluid fluids[] = {
-  {19, 2000, 0x2, 0}, // Gin
-  {20, 3000, 0x4, 0}, // Undone
-  {21, 5000, 0x1, 0}, // Tonic
+  {21, 13, 2000, 0x2, 0}, // Gin
+  {20, 14, 1000, 0x4, 0}, // Undone
+  {19, 15, 3000, 0x1, 0}, // Tonic
 };
 
 const int INTERVAL = 100; // process every x ms
@@ -36,6 +36,7 @@ void setup() {
 
   for(fluid fl : fluids) {
     pinMode(fl.pin, OUTPUT);
+    pinMode(fl.pin_override, INPUT);
   }
 
   state = READY;
@@ -45,6 +46,7 @@ void loop() {
   time_current = millis();
 
   handle_pressure();
+  if (handle_overrides()) return;
 
   switch (state) {
   case READY:
@@ -123,5 +125,42 @@ void handle_pressure() {
     } else if ( ! compressor_on && (pressure <= P_LOW) ) {
       digitalWrite(PIN_COMPRESSOR, HIGH);
     }
+  }
+}
+
+bool handle_overrides() {
+  static bool override;
+  bool override_button_active = false;
+
+  // any override button pressed?
+  for (fluid &fl : fluids) {
+    if ( digitalRead(fl.pin_override) == HIGH) {
+      override_button_active = true;
+    }
+  }
+
+  // handle override cases
+
+  if(override_button_active) {
+    override = true;
+    // fluid state is set to override button
+    for (fluid &fl : fluids) {
+      fl.time_left_ms = 0;
+      // set fluid output to override button state
+      digitalWrite(fl.pin, digitalRead(fl.pin_override));
+    }
+
+    return true;
+  } else {
+    if (override) {
+      // override button no longer pressed - cancel override
+      override = false;
+
+      for (fluid &fl : fluids) {
+        digitalWrite(fl.pin, LOW);
+      }
+    }
+
+    return false;
   }
 }
