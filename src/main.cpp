@@ -14,9 +14,9 @@ const byte RECIPE_UNDONE_TONIC = 0x5; // 100 + 001
 
 // { pin, override_pin, dispense duration, recipe bitmask, time_left_ms )
 fluid fluids[] = {
-  {21, 13, 11000, 0x2, 0}, // 1: Gin
-  {20, 14, 11000, 0x4, 0}, // 2: Undone
-  {19, 15, 19000, 0x1, 0}, // 3: Tonic
+  {21, 13, 2700, 0x2, 0},  // 1: Gin
+  {20, 14, 2700, 0x4, 0},  // 2: Undone
+  {19, 15, 9200, 0x1, 0},  // 3: Tonic
 };
 
 const int INTERVAL = 100; // process every x ms
